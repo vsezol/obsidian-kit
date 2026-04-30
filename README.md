@@ -41,12 +41,16 @@ Once approved, search for "Obsidian Kit" in Settings → Community plugins → B
 npm install
 npm run dev      # esbuild watch
 npm run build    # production build → main.js
+npm run deploy   # build, then copy main.js/manifest.json/styles.css into your vault
 ```
 
-Symlink the repo into a test vault:
+`npm run deploy` reads the vault path from `.vault-path` (one line, gitignored) or
+the `OBSIDIAN_VAULT_PATH` env var, and writes to
+`<vault>/.obsidian/plugins/obsidian-kit/`.
 
 ```bash
-ln -s "$(pwd)" /path/to/vault/.obsidian/plugins/obsidian-kit
+echo "/path/to/vault" > .vault-path
+npm run deploy
 ```
 
 ## License
