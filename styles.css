@@ -106,8 +106,7 @@
 }
 
 /* ==================== Progress ==================== */
-.obsidian-kit-progress,
-.obsidian-kit-progressRelative {
+.obsidian-kit-progress {
   display: inline;
   white-space: nowrap;
   margin: 0 0.15em;
@@ -134,13 +133,6 @@
 
 .obsidian-kit-progress-label {
   margin-left: 0.5em;
-  font-size: 0.85em;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-}
-
-.obsidian-kit-progress-rel-label {
-  margin: 0 0.4em;
   font-size: 0.85em;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
