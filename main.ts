@@ -13,7 +13,6 @@ import {
   ViewUpdate,
   WidgetType,
 } from "@codemirror/view";
-import { syntaxTree } from "@codemirror/language";
 
 type LeafKind =
   | "counter"
@@ -449,27 +448,6 @@ function scheduleCheckboxSyncLivePreview(
   }, 0);
 }
 
-function isInsideCode(view: EditorView, pos: number): boolean {
-  const tree = syntaxTree(view.state);
-  let node = tree.resolveInner(pos, 1);
-  while (node) {
-    const name = node.type.name;
-    if (
-      name.includes("inline-code") ||
-      name.includes("InlineCode") ||
-      name.includes("CodeBlock") ||
-      name.includes("FencedCode") ||
-      name.includes("HyperMD-codeblock") ||
-      name === "codeblock"
-    ) {
-      return true;
-    }
-    if (!node.parent) break;
-    node = node.parent;
-  }
-  return false;
-}
-
 function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   const cursor = view.state.selection.main.head;
@@ -483,7 +461,6 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
       const end = start + match[0].length;
 
       if (cursor >= start && cursor <= end) continue;
-      if (isInsideCode(view, start)) continue;
 
       const spec = parseSpec(match[1], match[2], match[0]);
       if (!spec) continue;
@@ -605,8 +582,6 @@ export default class ObsidianKitPlugin extends Plugin {
     }
 
     for (const textNode of textNodes) {
-      if (textNode.parentElement?.closest("code, pre")) continue;
-
       const text = textNode.textContent ?? "";
       if (
         !/\b(counter|switcher|progress|progressRelative|daysLeft|width)\(/.test(
