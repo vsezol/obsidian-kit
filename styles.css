@@ -1,0 +1,104 @@
+.obsidian-kit-widget {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+  user-select: none;
+  margin: 0 2px;
+  -webkit-user-select: none;
+}
+
+.obsidian-kit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 600;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.obsidian-kit-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.obsidian-kit-btn:active {
+  background: var(--background-modifier-active-hover);
+  transform: scale(0.95);
+}
+
+.obsidian-kit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.obsidian-kit-value {
+  min-width: 32px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  padding: 0 4px;
+}
+
+.obsidian-kit-toggle {
+  min-width: 50px;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid var(--background-modifier-border);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease;
+}
+
+.obsidian-kit-toggle.on {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.obsidian-kit-toggle.off {
+  background: var(--background-secondary);
+  color: var(--text-muted);
+}
+
+.obsidian-kit-toggle:active {
+  transform: scale(0.95);
+}
+
+.obsidian-kit-slider {
+  vertical-align: middle;
+  width: 120px;
+  height: 24px;
+  touch-action: manipulation;
+  accent-color: var(--interactive-accent);
+}
+
+@media (max-width: 600px) {
+  .obsidian-kit-btn {
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 18px;
+  }
+  .obsidian-kit-toggle {
+    min-height: 32px;
+    min-width: 56px;
+    font-size: 12px;
+  }
+  .obsidian-kit-slider {
+    height: 32px;
+  }
+}

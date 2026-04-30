@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-kit",
+  "name": "Obsidian Kit",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Inline interactive widgets: counter(0, 6), switcher(false), range(0, 10, 2).",
+  "author": "vsezol",
+  "authorUrl": "https://github.com/vsezol",
+  "isDesktopOnly": false
+}
