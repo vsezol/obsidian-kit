@@ -13,6 +13,7 @@ import {
   ViewUpdate,
   WidgetType,
 } from "@codemirror/view";
+import { syntaxTree } from "@codemirror/language";
 
 type LeafKind =
   | "counter"
@@ -144,11 +145,20 @@ function buildWidget(
     const innerEl = buildLeafWidget(spec.inner, (newInnerRaw) => {
       onChange(`width(${spec.width}, ${newInnerRaw})`);
     });
-    innerEl.style.width = spec.width;
-    innerEl.style.display = "inline-flex";
+    applyWidth(innerEl, spec.inner.kind, spec.width);
     return innerEl;
   }
   return buildLeafWidget(spec, onChange);
+}
+
+function applyWidth(el: HTMLElement, innerKind: LeafKind, width: string) {
+  if (innerKind === "progress" || innerKind === "progressRelative") {
+    const bar = el.querySelector<HTMLElement>(".obsidian-kit-progress-bar");
+    if (bar) bar.style.width = width;
+    return;
+  }
+  el.style.display = "inline-block";
+  el.style.width = width;
 }
 
 function buildLeafWidget(
@@ -376,6 +386,27 @@ class ObsidianKitWidget extends WidgetType {
   }
 }
 
+function isInsideCode(view: EditorView, pos: number): boolean {
+  const tree = syntaxTree(view.state);
+  let node = tree.resolveInner(pos, 1);
+  while (node) {
+    const name = node.type.name;
+    if (
+      name.includes("inline-code") ||
+      name.includes("InlineCode") ||
+      name.includes("CodeBlock") ||
+      name.includes("FencedCode") ||
+      name.includes("HyperMD-codeblock") ||
+      name === "codeblock"
+    ) {
+      return true;
+    }
+    if (!node.parent) break;
+    node = node.parent;
+  }
+  return false;
+}
+
 function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   const cursor = view.state.selection.main.head;
@@ -389,6 +420,7 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
       const end = start + match[0].length;
 
       if (cursor >= start && cursor <= end) continue;
+      if (isInsideCode(view, start)) continue;
 
       const spec = parseSpec(match[1], match[2], match[0]);
       if (!spec) continue;
@@ -476,6 +508,8 @@ export default class ObsidianKitPlugin extends Plugin {
     }
 
     for (const textNode of textNodes) {
+      if (textNode.parentElement?.closest("code, pre")) continue;
+
       const text = textNode.textContent ?? "";
       if (
         !/\b(counter|switcher|progress|progressRelative|daysLeft|width)\(/.test(
