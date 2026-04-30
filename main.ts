@@ -14,23 +14,87 @@ import {
   WidgetType,
 } from "@codemirror/view";
 
-type Kind = "counter" | "switcher" | "progress" | "daysLeft";
+type LeafKind = "counter" | "switcher" | "progress" | "daysLeft";
 
-interface WidgetSpec {
-  kind: Kind;
+interface LeafSpec {
+  kind: LeafKind;
   args: string[];
   raw: string;
 }
 
-const WIDGET_PATTERN = /\b(counter|switcher|progress|daysLeft)\(([^)\n]*)\)/g;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function parseArgs(raw: string): string[] {
-  if (!raw.trim()) return [];
-  return raw.split(",").map((s) => s.trim());
+interface WidthSpec {
+  kind: "width";
+  width: string;
+  inner: LeafSpec;
+  raw: string;
 }
 
-function formatRaw(kind: Kind, args: string[]): string {
+type WidgetSpec = LeafSpec | WidthSpec;
+
+const WIDGET_PATTERN =
+  /\b(counter|switcher|progress|daysLeft|width)\(((?:[^()]|\([^()]*\))*)\)/g;
+const INNER_LEAF_PATTERN =
+  /^(counter|switcher|progress|daysLeft)\(((?:[^()]|\([^()]*\))*)\)$/;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function splitTopLevelCommas(s: string): string[] {
+  if (!s.trim()) return [];
+  const out: string[] = [];
+  let depth = 0;
+  let inString: string | null = null;
+  let start = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inString) {
+      if (c === inString) inString = null;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === "`") {
+      inString = c;
+    } else if (c === "(") {
+      depth++;
+    } else if (c === ")") {
+      depth--;
+    } else if (c === "," && depth === 0) {
+      out.push(s.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  out.push(s.slice(start).trim());
+  return out;
+}
+
+function parseSpec(
+  kind: string,
+  argsRaw: string,
+  raw: string
+): WidgetSpec | null {
+  if (kind === "width") {
+    const args = splitTopLevelCommas(argsRaw);
+    if (args.length < 2) return null;
+    const width = args[0];
+    const innerRaw = args.slice(1).join(", ").trim();
+    const m = innerRaw.match(INNER_LEAF_PATTERN);
+    if (!m) return null;
+    return {
+      kind: "width",
+      width,
+      inner: {
+        kind: m[1] as LeafKind,
+        args: splitTopLevelCommas(m[2]),
+        raw: innerRaw,
+      },
+      raw,
+    };
+  }
+  return {
+    kind: kind as LeafKind,
+    args: splitTopLevelCommas(argsRaw),
+    raw,
+  };
+}
+
+function formatRaw(kind: LeafKind, args: string[]): string {
   return `${kind}(${args.join(", ")})`;
 }
 
@@ -71,6 +135,21 @@ function buildWidget(
   spec: WidgetSpec,
   onChange: (newRaw: string) => void
 ): HTMLElement {
+  if (spec.kind === "width") {
+    const innerEl = buildLeafWidget(spec.inner, (newInnerRaw) => {
+      onChange(`width(${spec.width}, ${newInnerRaw})`);
+    });
+    innerEl.style.width = spec.width;
+    innerEl.style.display = "inline-flex";
+    return innerEl;
+  }
+  return buildLeafWidget(spec, onChange);
+}
+
+function buildLeafWidget(
+  spec: LeafSpec,
+  onChange: (newRaw: string) => void
+): HTMLElement {
   const root = document.createElement("span");
   root.className = `obsidian-kit-widget obsidian-kit-${spec.kind}`;
 
@@ -89,7 +168,7 @@ function buildWidget(
 
 function renderCounter(
   root: HTMLElement,
-  spec: WidgetSpec,
+  spec: LeafSpec,
   onChange: (newRaw: string) => void
 ) {
   const value = toInt(spec.args[0], 0);
@@ -142,7 +221,7 @@ function renderCounter(
 
 function renderSwitcher(
   root: HTMLElement,
-  spec: WidgetSpec,
+  spec: LeafSpec,
   onChange: (newRaw: string) => void
 ) {
   const value = (spec.args[0] ?? "false").toLowerCase() === "true";
@@ -166,7 +245,7 @@ function renderSwitcher(
   root.appendChild(toggle);
 }
 
-function renderProgress(root: HTMLElement, spec: WidgetSpec) {
+function renderProgress(root: HTMLElement, spec: LeafSpec) {
   const a = spec.args[0] ?? "";
   const b = spec.args[1] ?? "";
 
@@ -216,7 +295,7 @@ function formatNumber(n: number): string {
   return String(Math.round(n * 100) / 100);
 }
 
-function renderDaysLeft(root: HTMLElement, spec: WidgetSpec) {
+function renderDaysLeft(root: HTMLElement, spec: LeafSpec) {
   const date = parseDate(spec.args[0] ?? "");
   if (!date) {
     root.textContent = "?";
@@ -274,11 +353,8 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
 
       if (cursor >= start && cursor <= end) continue;
 
-      const spec: WidgetSpec = {
-        kind: match[1] as Kind,
-        args: parseArgs(match[2]),
-        raw: match[0],
-      };
+      const spec = parseSpec(match[1], match[2], match[0]);
+      if (!spec) continue;
 
       builder.add(
         start,
@@ -364,7 +440,8 @@ export default class ObsidianKitPlugin extends Plugin {
 
     for (const textNode of textNodes) {
       const text = textNode.textContent ?? "";
-      if (!/\b(counter|switcher|progress|daysLeft)\(/.test(text)) continue;
+      if (!/\b(counter|switcher|progress|daysLeft|width)\(/.test(text))
+        continue;
 
       const fragment = document.createDocumentFragment();
       let lastIndex = 0;
@@ -379,11 +456,12 @@ export default class ObsidianKitPlugin extends Plugin {
         }
 
         const matchedRaw = match[0];
-        const spec: WidgetSpec = {
-          kind: match[1] as Kind,
-          args: parseArgs(match[2]),
-          raw: matchedRaw,
-        };
+        const spec = parseSpec(match[1], match[2], matchedRaw);
+        if (!spec) {
+          fragment.appendChild(document.createTextNode(matchedRaw));
+          lastIndex = match.index + matchedRaw.length;
+          continue;
+        }
 
         const widgetEl = buildWidget(spec, (newRaw) => {
           void replaceInFile(this.app, ctx, el, matchedRaw, newRaw);
