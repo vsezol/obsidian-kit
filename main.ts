@@ -53,16 +53,13 @@ function stripQuotes(s: string): string {
 function parseDate(raw: string): Date | null {
   const s = stripQuotes(raw);
   if (!s) return null;
-  const ymd = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (ymd) {
-    const d = new Date(
-      parseInt(ymd[1], 10),
-      parseInt(ymd[2], 10) - 1,
-      parseInt(ymd[3], 10)
-    );
-    return Number.isFinite(d.getTime()) ? d : null;
-  }
-  const d = new Date(s);
+  const ymd = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if (!ymd) return null;
+  const d = new Date(
+    parseInt(ymd[1], 10),
+    parseInt(ymd[2], 10) - 1,
+    parseInt(ymd[3], 10)
+  );
   return Number.isFinite(d.getTime()) ? d : null;
 }
 
