@@ -151,6 +151,13 @@ function buildLeafWidget(
   onChange: (newRaw: string) => void
 ): HTMLElement {
   const root = document.createElement("span");
+
+  if (spec.kind === "daysLeft") {
+    root.className = "obsidian-kit-days-left";
+    renderDaysLeft(root, spec);
+    return root;
+  }
+
   root.className = `obsidian-kit-widget obsidian-kit-${spec.kind}`;
 
   if (spec.kind === "counter") {
@@ -159,8 +166,6 @@ function buildLeafWidget(
     renderSwitcher(root, spec, onChange);
   } else if (spec.kind === "progress") {
     renderProgress(root, spec);
-  } else if (spec.kind === "daysLeft") {
-    renderDaysLeft(root, spec);
   }
 
   return root;
