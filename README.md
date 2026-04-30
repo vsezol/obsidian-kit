@@ -8,9 +8,10 @@ Inline interactive widgets for Obsidian. Type a short expression in your note an
 | --- | --- |
 | `counter(0, 6)` | `−` `0/6` `+` buttons (default step `1`) |
 | `counter(0, 6, 2)` | same, step `2` |
-| `switcher(false)` | `OFF` / `ON` toggle pill |
-| `range(0, 10)` | slider, default step `1` |
-| `range(0, 10, 2)` | slider, step `2` |
+| `switcher(false)` | iOS-style on/off toggle |
+| `progress(25, 100)` | progress bar filled to `25%` with label `25/100` |
+| `progress('2025-09-01', '2026-06-01')` | progress bar showing how far today sits between two dates, label `Xd/Yd` |
+| `daysLeft('2026-06-01')` | inline number — days from today until the date |
 
 Tapping any control rewrites the source line in place. Place the cursor inside the expression in Live Preview to edit the raw text.
 
@@ -20,7 +21,9 @@ Tapping any control rewrites the source line in place. Place the cursor inside t
 Health:
 - Gym counter(0, 6)
 - Meditate switcher(false)
-- Mood range(0, 10)
+- Year progress(25, 100)
+- Sprint progress('2025-09-01', '2026-06-01')
+- daysLeft('2026-06-01') days until launch
 ```
 
 ## Install

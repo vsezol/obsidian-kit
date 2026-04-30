@@ -100,14 +100,52 @@
   width: 1.25em;
 }
 
-/* ===== Range slider ===== */
-.obsidian-kit-slider {
-  vertical-align: middle;
-  width: 140px;
-  height: 1.4em;
-  accent-color: var(--interactive-accent);
-  touch-action: manipulation;
-  cursor: pointer;
+/* ===== Progress bar ===== */
+.obsidian-kit-progress {
+  width: 180px;
+  gap: 0.5em;
+}
+
+.obsidian-kit-progress-bar {
+  display: inline-block;
+  flex: 1 1 auto;
+  height: 0.6em;
+  border-radius: 999px;
+  background: var(--background-modifier-border);
+  overflow: hidden;
+  position: relative;
+}
+
+.obsidian-kit-progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--interactive-accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.obsidian-kit-progress-label {
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/* ===== daysLeft inline text ===== */
+.obsidian-kit-days-left {
+  display: inline;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  margin: 0;
+}
+
+.obsidian-kit-days-overdue {
+  color: var(--text-error);
+}
+
+.obsidian-kit-days-invalid {
+  color: var(--text-muted);
 }
 
 /* ===== Mobile / coarse-pointer overrides ===== */
@@ -151,15 +189,13 @@
     transform: translateX(16px);
   }
 
-  /* range: stretch to full available width on mobile */
-  .obsidian-kit-range {
+  /* progress: stretch full width on mobile */
+  .obsidian-kit-progress {
     display: flex;
     width: 100%;
   }
 
-  .obsidian-kit-range .obsidian-kit-slider {
-    flex: 1 1 auto;
-    min-width: 0;
-    height: 32px;
+  .obsidian-kit-progress-bar {
+    height: 8px;
   }
 }

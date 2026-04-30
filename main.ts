@@ -14,7 +14,7 @@ import {
   WidgetType,
 } from "@codemirror/view";
 
-type Kind = "counter" | "switcher" | "range";
+type Kind = "counter" | "switcher" | "progress" | "daysLeft";
 
 interface WidgetSpec {
   kind: Kind;
@@ -22,7 +22,8 @@ interface WidgetSpec {
   raw: string;
 }
 
-const WIDGET_PATTERN = /\b(counter|switcher|range)\(([^)\n]*)\)/g;
+const WIDGET_PATTERN = /\b(counter|switcher|progress|daysLeft)\(([^)\n]*)\)/g;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function parseArgs(raw: string): string[] {
   if (!raw.trim()) return [];
@@ -39,6 +40,36 @@ function toInt(s: string | undefined, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function toFloat(s: string | undefined, fallback: number): number {
+  if (s === undefined) return fallback;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function stripQuotes(s: string): string {
+  return s.replace(/^['"`]|['"`]$/g, "").trim();
+}
+
+function parseDate(raw: string): Date | null {
+  const s = stripQuotes(raw);
+  if (!s) return null;
+  const ymd = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (ymd) {
+    const d = new Date(
+      parseInt(ymd[1], 10),
+      parseInt(ymd[2], 10) - 1,
+      parseInt(ymd[3], 10)
+    );
+    return Number.isFinite(d.getTime()) ? d : null;
+  }
+  const d = new Date(s);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+function startOfDay(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
 function buildWidget(
   spec: WidgetSpec,
   onChange: (newRaw: string) => void
@@ -50,8 +81,10 @@ function buildWidget(
     renderCounter(root, spec, onChange);
   } else if (spec.kind === "switcher") {
     renderSwitcher(root, spec, onChange);
-  } else if (spec.kind === "range") {
-    renderRange(root, spec, onChange);
+  } else if (spec.kind === "progress") {
+    renderProgress(root, spec);
+  } else if (spec.kind === "daysLeft") {
+    renderDaysLeft(root, spec);
   }
 
   return root;
@@ -136,44 +169,68 @@ function renderSwitcher(
   root.appendChild(toggle);
 }
 
-function renderRange(
-  root: HTMLElement,
-  spec: WidgetSpec,
-  onChange: (newRaw: string) => void
-) {
-  const value = toInt(spec.args[0], 0);
-  const max = toInt(spec.args[1], 0);
-  const stepProvided = spec.args.length > 2;
-  const step = stepProvided ? toInt(spec.args[2], 1) : 1;
+function renderProgress(root: HTMLElement, spec: WidgetSpec) {
+  const a = spec.args[0] ?? "";
+  const b = spec.args[1] ?? "";
 
-  const slider = document.createElement("input");
-  slider.type = "range";
-  slider.className = "obsidian-kit-slider";
-  slider.min = "0";
-  slider.max = String(max);
-  slider.step = String(step);
-  slider.value = String(value);
+  const dateA = parseDate(a);
+  const dateB = parseDate(b);
 
-  const display = document.createElement("span");
-  display.className = "obsidian-kit-value";
-  display.textContent = `${value}/${max}`;
+  let percent: number;
+  let label: string;
 
-  slider.addEventListener("input", (e) => {
-    e.stopPropagation();
-    const v = parseInt((e.target as HTMLInputElement).value, 10);
-    display.textContent = `${v}/${max}`;
-  });
-  slider.addEventListener("change", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const v = parseInt((e.target as HTMLInputElement).value, 10);
-    const args: string[] = [String(v), String(max)];
-    if (stepProvided) args.push(String(step));
-    onChange(formatRaw("range", args));
-  });
+  if (dateA && dateB) {
+    const start = startOfDay(dateA);
+    const end = startOfDay(dateB);
+    const now = startOfDay(new Date());
+    const total = Math.max(0, end - start);
+    const elapsed = Math.max(0, Math.min(total, now - start));
+    percent = total > 0 ? (elapsed / total) * 100 : 0;
+    const totalDays = Math.round(total / DAY_MS);
+    const elapsedDays = Math.round(elapsed / DAY_MS);
+    label = `${elapsedDays}/${totalDays}d`;
+  } else {
+    const value = toFloat(a, 0);
+    const total = toFloat(b, 0);
+    percent = total > 0 ? (value / total) * 100 : 0;
+    label = `${formatNumber(value)}/${formatNumber(total)}`;
+  }
 
-  root.appendChild(slider);
-  root.appendChild(display);
+  percent = Math.max(0, Math.min(100, percent));
+
+  const bar = document.createElement("span");
+  bar.className = "obsidian-kit-progress-bar";
+
+  const fill = document.createElement("span");
+  fill.className = "obsidian-kit-progress-fill";
+  fill.style.width = `${percent}%`;
+  bar.appendChild(fill);
+
+  const text = document.createElement("span");
+  text.className = "obsidian-kit-progress-label";
+  text.textContent = label;
+
+  root.appendChild(bar);
+  root.appendChild(text);
+}
+
+function formatNumber(n: number): string {
+  if (Number.isInteger(n)) return String(n);
+  return String(Math.round(n * 100) / 100);
+}
+
+function renderDaysLeft(root: HTMLElement, spec: WidgetSpec) {
+  const date = parseDate(spec.args[0] ?? "");
+  if (!date) {
+    root.textContent = "?";
+    root.classList.add("obsidian-kit-days-invalid");
+    return;
+  }
+  const target = startOfDay(date);
+  const now = startOfDay(new Date());
+  const days = Math.round((target - now) / DAY_MS);
+  root.textContent = String(days);
+  if (days < 0) root.classList.add("obsidian-kit-days-overdue");
 }
 
 class ObsidianKitWidget extends WidgetType {
@@ -310,7 +367,7 @@ export default class ObsidianKitPlugin extends Plugin {
 
     for (const textNode of textNodes) {
       const text = textNode.textContent ?? "";
-      if (!/\b(counter|switcher|range)\(/.test(text)) continue;
+      if (!/\b(counter|switcher|progress|daysLeft)\(/.test(text)) continue;
 
       const fragment = document.createDocumentFragment();
       let lastIndex = 0;
