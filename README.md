@@ -8,8 +8,6 @@ Inline interactive widgets for Obsidian. Type a short expression in your note an
 | --- | --- |
 | `counter(0, 6)` | `−` `0/6` `+` buttons (default step `1`) |
 | `counter(0, 6, 2)` | same, step `2` |
-| `counter(100.4, 95)` | descending counter — first `>` second auto-flips buttons (`+` left, `−` right) and defaults step to `-1`. Float values supported. |
-| `counter(100.4, 95, -0.5)` | same, custom negative step |
 | `switcher(false)` | iOS-style on/off toggle |
 | `progress(25, 100)` | progress bar filled to `25%` with label `25/100` |
 | `progress('2025-09-01', '2026-06-01')` | progress bar showing how far today sits between two dates, label `Xd/Yd` |

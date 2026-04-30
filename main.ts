@@ -137,16 +137,10 @@ function isWidgetComplete(spec: WidgetSpec): boolean | null {
   if (spec.kind === "width") return isWidgetComplete(spec.inner);
 
   if (spec.kind === "counter") {
-    const value = toFloat(spec.args[0], 0);
-    const target = toFloat(spec.args[1], 0);
-    const stepProvided = spec.args.length > 2;
-    const defaultStep = value > target ? -1 : 1;
-    const step = stepProvided
-      ? toFloat(spec.args[2], defaultStep)
-      : defaultStep;
-    if (step < 0) return value <= target;
-    if (target <= 0) return null;
-    return value >= target;
+    const value = toInt(spec.args[0], 0);
+    const max = toInt(spec.args[1], 0);
+    if (max <= 0) return null;
+    return value >= max;
   }
 
   if (spec.kind === "switcher") {
@@ -224,71 +218,52 @@ function renderCounter(
   spec: LeafSpec,
   onChange: (newRaw: string) => void
 ) {
-  const value = toFloat(spec.args[0], 0);
-  const target = toFloat(spec.args[1], 0);
+  const value = toInt(spec.args[0], 0);
+  const max = toInt(spec.args[1], 0);
   const stepProvided = spec.args.length > 2;
-  const defaultStep = value > target ? -1 : 1;
-  const step = stepProvided ? toFloat(spec.args[2], defaultStep) : defaultStep;
-  const descending = step < 0;
+  const step = stepProvided ? toInt(spec.args[2], 1) : 1;
 
   const minus = document.createElement("button");
   minus.type = "button";
   minus.className = "obsidian-kit-btn";
   minus.textContent = "−";
+  minus.disabled = value <= 0;
+
+  const display = document.createElement("span");
+  display.className = "obsidian-kit-value";
+  display.textContent = `${value}/${max}`;
 
   const plus = document.createElement("button");
   plus.type = "button";
   plus.className = "obsidian-kit-btn";
   plus.textContent = "+";
-
-  if (descending) {
-    plus.disabled = value <= target;
-    minus.disabled = false;
-  } else {
-    plus.disabled = value >= target;
-    minus.disabled = value <= 0;
-  }
-
-  const display = document.createElement("span");
-  display.className = "obsidian-kit-value";
-  display.textContent = `${formatNumber(value)}/${formatNumber(target)}`;
+  plus.disabled = value >= max;
 
   const stop = (e: Event) => {
     e.preventDefault();
     e.stopPropagation();
   };
 
-  const clamp = (v: number) =>
-    descending ? Math.max(target, v) : Math.max(0, Math.min(target, v));
-
   const emit = (next: number) => {
-    next = clamp(next);
-    const args: string[] = [formatNumber(next), formatNumber(target)];
-    const newDefault = next > target ? -1 : 1;
-    if (step !== newDefault) args.push(formatNumber(step));
+    const args: string[] = [String(next), String(max)];
+    if (stepProvided) args.push(String(step));
     onChange(formatRaw("counter", args));
   };
 
-  plus.addEventListener("click", (e) => {
-    stop(e);
-    if (plus.disabled) return;
-    emit(value + step);
-  });
   minus.addEventListener("click", (e) => {
     stop(e);
-    if (minus.disabled) return;
-    emit(value - step);
+    if (value <= 0) return;
+    emit(Math.max(0, value - step));
+  });
+  plus.addEventListener("click", (e) => {
+    stop(e);
+    if (value >= max) return;
+    emit(Math.min(max, value + step));
   });
 
-  if (descending) {
-    root.appendChild(plus);
-    root.appendChild(display);
-    root.appendChild(minus);
-  } else {
-    root.appendChild(minus);
-    root.appendChild(display);
-    root.appendChild(plus);
-  }
+  root.appendChild(minus);
+  root.appendChild(display);
+  root.appendChild(plus);
 }
 
 function renderSwitcher(
