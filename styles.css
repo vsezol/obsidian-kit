@@ -134,6 +134,21 @@
   flex: 0 0 auto;
 }
 
+/* ===== Progress relative (a | bar | b) ===== */
+.obsidian-kit-progressRelative {
+  width: 180px;
+  gap: 0.4em;
+  vertical-align: -0.1em;
+}
+
+.obsidian-kit-progress-rel-label {
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
 /* ===== daysLeft — pure inline text, no widget chrome ===== */
 .obsidian-kit-days-left {
   font-variant-numeric: tabular-nums;
@@ -191,7 +206,8 @@
   }
 
   /* progress: stretch full width on mobile */
-  .obsidian-kit-progress {
+  .obsidian-kit-progress,
+  .obsidian-kit-progressRelative {
     display: flex;
     width: 100%;
     vertical-align: middle;

@@ -12,6 +12,7 @@ Inline interactive widgets for Obsidian. Type a short expression in your note an
 | `progress(25, 100)` | progress bar filled to `25%` with label `25/100` |
 | `progress('2025-09-01', '2026-06-01')` | progress bar showing how far today sits between two dates, label `Xd/Yd` |
 | `daysLeft('2026-06-01')` | inline number — days from today until the date |
+| `progressRelative(100, 95)` | left label, bar, right label; fill is `\|a − b\|` clamped to `0..100` |
 | `width(240px, counter(0, 10))` | wraps any widget and overrides its width (also `%`, `em`, `rem`, etc.) |
 
 Tapping any control rewrites the source line in place. Place the cursor inside the expression in Live Preview to edit the raw text.

@@ -14,7 +14,12 @@ import {
   WidgetType,
 } from "@codemirror/view";
 
-type LeafKind = "counter" | "switcher" | "progress" | "daysLeft";
+type LeafKind =
+  | "counter"
+  | "switcher"
+  | "progress"
+  | "progressRelative"
+  | "daysLeft";
 
 interface LeafSpec {
   kind: LeafKind;
@@ -32,9 +37,9 @@ interface WidthSpec {
 type WidgetSpec = LeafSpec | WidthSpec;
 
 const WIDGET_PATTERN =
-  /\b(counter|switcher|progress|daysLeft|width)\(((?:[^()]|\([^()]*\))*)\)/g;
+  /\b(counter|switcher|progress|progressRelative|daysLeft|width)\(((?:[^()\n]|\([^()\n]*\))*)\)/g;
 const INNER_LEAF_PATTERN =
-  /^(counter|switcher|progress|daysLeft)\(((?:[^()]|\([^()]*\))*)\)$/;
+  /^(counter|switcher|progress|progressRelative|daysLeft)\(((?:[^()\n]|\([^()\n]*\))*)\)$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function splitTopLevelCommas(s: string): string[] {
@@ -166,6 +171,8 @@ function buildLeafWidget(
     renderSwitcher(root, spec, onChange);
   } else if (spec.kind === "progress") {
     renderProgress(root, spec);
+  } else if (spec.kind === "progressRelative") {
+    renderProgressRelative(root, spec);
   }
 
   return root;
@@ -298,6 +305,31 @@ function renderProgress(root: HTMLElement, spec: LeafSpec) {
 function formatNumber(n: number): string {
   if (Number.isInteger(n)) return String(n);
   return String(Math.round(n * 100) / 100);
+}
+
+function renderProgressRelative(root: HTMLElement, spec: LeafSpec) {
+  const a = toFloat(spec.args[0], 0);
+  const b = toFloat(spec.args[1], 0);
+  const percent = Math.max(0, Math.min(100, Math.abs(a - b)));
+
+  const left = document.createElement("span");
+  left.className = "obsidian-kit-progress-rel-label";
+  left.textContent = formatNumber(a);
+
+  const bar = document.createElement("span");
+  bar.className = "obsidian-kit-progress-bar";
+  const fill = document.createElement("span");
+  fill.className = "obsidian-kit-progress-fill";
+  fill.style.width = `${percent}%`;
+  bar.appendChild(fill);
+
+  const right = document.createElement("span");
+  right.className = "obsidian-kit-progress-rel-label";
+  right.textContent = formatNumber(b);
+
+  root.appendChild(left);
+  root.appendChild(bar);
+  root.appendChild(right);
 }
 
 function renderDaysLeft(root: HTMLElement, spec: LeafSpec) {
@@ -445,7 +477,11 @@ export default class ObsidianKitPlugin extends Plugin {
 
     for (const textNode of textNodes) {
       const text = textNode.textContent ?? "";
-      if (!/\b(counter|switcher|progress|daysLeft|width)\(/.test(text))
+      if (
+        !/\b(counter|switcher|progress|progressRelative|daysLeft|width)\(/.test(
+          text
+        )
+      )
         continue;
 
       const fragment = document.createDocumentFragment();
