@@ -1,30 +1,33 @@
 .obsidian-kit-widget {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.3em;
   vertical-align: middle;
   user-select: none;
-  margin: 0 2px;
   -webkit-user-select: none;
+  margin: 0 0.15em;
 }
 
+/* ===== Counter buttons — square, inline-text-sized on desktop ===== */
 .obsidian-kit-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  min-height: 28px;
-  padding: 0 8px;
-  border-radius: 6px;
+  width: 1.5em;
+  height: 1.5em;
+  padding: 0;
+  border-radius: 4px;
   border: 1px solid var(--background-modifier-border);
   background: var(--background-secondary);
   color: var(--text-normal);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 0.9em;
   line-height: 1;
-  font-weight: 600;
+  font-weight: 700;
+  font-family: inherit;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  flex: 0 0 auto;
 }
 
 .obsidian-kit-btn:hover {
@@ -33,72 +36,130 @@
 
 .obsidian-kit-btn:active {
   background: var(--background-modifier-active-hover);
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
 .obsidian-kit-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
+.obsidian-kit-btn:disabled:active {
+  transform: none;
+}
+
 .obsidian-kit-value {
-  min-width: 32px;
+  min-width: 2.2em;
   text-align: center;
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  padding: 0 4px;
+  padding: 0 0.2em;
 }
 
-.obsidian-kit-toggle {
-  min-width: 50px;
-  min-height: 28px;
-  padding: 0 12px;
-  border-radius: 14px;
-  border: 1px solid var(--background-modifier-border);
+/* ===== iOS-style switcher ===== */
+.obsidian-kit-switch {
+  position: relative;
+  display: inline-block;
+  width: 2.2em;
+  height: 1.3em;
+  border-radius: 999px;
+  border: none;
   cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  touch-action: manipulation;
+  padding: 0;
+  vertical-align: middle;
+  transition: background-color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s ease;
+  touch-action: manipulation;
+  flex: 0 0 auto;
 }
 
-.obsidian-kit-toggle.on {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border-color: var(--interactive-accent);
+.obsidian-kit-switch.off {
+  background-color: var(--background-modifier-border);
 }
 
-.obsidian-kit-toggle.off {
-  background: var(--background-secondary);
-  color: var(--text-muted);
+.obsidian-kit-switch.on {
+  background-color: var(--interactive-accent);
 }
 
-.obsidian-kit-toggle:active {
-  transform: scale(0.95);
+.obsidian-kit-switch-thumb {
+  position: absolute;
+  top: 0.1em;
+  left: 0.1em;
+  width: 1.1em;
+  height: 1.1em;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.obsidian-kit-switch.on .obsidian-kit-switch-thumb {
+  transform: translateX(0.9em);
+}
+
+.obsidian-kit-switch:active .obsidian-kit-switch-thumb {
+  width: 1.25em;
+}
+
+/* ===== Range slider ===== */
 .obsidian-kit-slider {
   vertical-align: middle;
-  width: 120px;
-  height: 24px;
-  touch-action: manipulation;
+  width: 140px;
+  height: 1.4em;
   accent-color: var(--interactive-accent);
+  touch-action: manipulation;
+  cursor: pointer;
 }
 
-@media (max-width: 600px) {
+/* ===== Mobile / coarse-pointer overrides ===== */
+@media (max-width: 600px), (pointer: coarse) {
+  .obsidian-kit-widget {
+    gap: 6px;
+  }
+
   .obsidian-kit-btn {
-    min-width: 36px;
-    min-height: 36px;
+    width: 36px;
+    height: 36px;
     font-size: 18px;
+    border-radius: 7px;
   }
-  .obsidian-kit-toggle {
-    min-height: 32px;
-    min-width: 56px;
-    font-size: 12px;
+
+  .obsidian-kit-value {
+    min-width: 2.4em;
+    font-size: 1em;
   }
-  .obsidian-kit-slider {
+
+  .obsidian-kit-switch {
+    width: 50px;
+    height: 30px;
+  }
+
+  .obsidian-kit-switch-thumb {
+    top: 2px;
+    left: 2px;
+    width: 26px;
+    height: 26px;
+  }
+
+  .obsidian-kit-switch.on .obsidian-kit-switch-thumb {
+    transform: translateX(20px);
+  }
+
+  .obsidian-kit-switch:active .obsidian-kit-switch-thumb {
+    width: 30px;
+  }
+  .obsidian-kit-switch.on:active .obsidian-kit-switch-thumb {
+    transform: translateX(16px);
+  }
+
+  /* range: stretch to full available width on mobile */
+  .obsidian-kit-range {
+    display: flex;
+    width: 100%;
+  }
+
+  .obsidian-kit-range .obsidian-kit-slider {
+    flex: 1 1 auto;
+    min-width: 0;
     height: 32px;
   }
 }

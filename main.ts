@@ -119,8 +119,13 @@ function renderSwitcher(
 
   const toggle = document.createElement("button");
   toggle.type = "button";
-  toggle.className = `obsidian-kit-toggle ${value ? "on" : "off"}`;
-  toggle.textContent = value ? "ON" : "OFF";
+  toggle.className = `obsidian-kit-switch ${value ? "on" : "off"}`;
+  toggle.setAttribute("role", "switch");
+  toggle.setAttribute("aria-checked", String(value));
+
+  const thumb = document.createElement("span");
+  thumb.className = "obsidian-kit-switch-thumb";
+  toggle.appendChild(thumb);
 
   toggle.addEventListener("click", (e) => {
     e.preventDefault();
@@ -197,7 +202,7 @@ class ObsidianKitWidget extends WidgetType {
   }
 
   ignoreEvent(): boolean {
-    return false;
+    return true;
   }
 }
 
