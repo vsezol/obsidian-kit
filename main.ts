@@ -137,6 +137,46 @@ function startOfDay(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
+const CHECKBOX_PATTERN = /^(\s*(?:[-*+]|\d+\.)\s+\[)([ xX])(\])/;
+
+function isWidgetComplete(spec: WidgetSpec): boolean | null {
+  if (spec.kind === "width") return isWidgetComplete(spec.inner);
+
+  if (spec.kind === "counter") {
+    const value = toInt(spec.args[0], 0);
+    const max = toInt(spec.args[1], 0);
+    if (max <= 0) return null;
+    return value >= max;
+  }
+
+  if (spec.kind === "switcher") {
+    return (spec.args[0] ?? "false").toLowerCase() === "true";
+  }
+
+  if (spec.kind === "progress") {
+    const a = spec.args[0] ?? "";
+    const b = spec.args[1] ?? "";
+    const dateA = parseDate(a);
+    const dateB = parseDate(b);
+    if (dateA && dateB) {
+      return startOfDay(new Date()) >= startOfDay(dateB);
+    }
+    const value = toFloat(a, 0);
+    const total = toFloat(b, 0);
+    if (total <= 0) return null;
+    return value >= total;
+  }
+
+  if (spec.kind === "progressRelative") {
+    const a = parseFloat(spec.args[0] ?? "");
+    const b = parseFloat(spec.args[1] ?? "");
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    return a === b;
+  }
+
+  return null;
+}
+
 function buildWidget(
   spec: WidgetSpec,
   onChange: (newRaw: string) => void
@@ -386,6 +426,29 @@ class ObsidianKitWidget extends WidgetType {
   }
 }
 
+function scheduleCheckboxSyncLivePreview(
+  view: EditorView,
+  pos: number,
+  complete: boolean
+) {
+  const line = view.state.doc.lineAt(pos);
+  const m = line.text.match(CHECKBOX_PATTERN);
+  if (!m) return;
+  const desired = complete ? "x" : " ";
+  if (m[2] === desired) return;
+  const cbPos = line.from + m[1].length;
+
+  setTimeout(() => {
+    const stillLine = view.state.doc.lineAt(cbPos);
+    const stillMatch = stillLine.text.match(CHECKBOX_PATTERN);
+    if (!stillMatch || stillMatch[2] === desired) return;
+    const stillCbPos = stillLine.from + stillMatch[1].length;
+    view.dispatch({
+      changes: { from: stillCbPos, to: stillCbPos + 1, insert: desired },
+    });
+  }, 0);
+}
+
 function isInsideCode(view: EditorView, pos: number): boolean {
   const tree = syntaxTree(view.state);
   let node = tree.resolveInner(pos, 1);
@@ -425,6 +488,11 @@ function buildLivePreviewDecorations(view: EditorView): DecorationSet {
       const spec = parseSpec(match[1], match[2], match[0]);
       if (!spec) continue;
 
+      const complete = isWidgetComplete(spec);
+      if (complete !== null) {
+        scheduleCheckboxSyncLivePreview(view, start, complete);
+      }
+
       builder.add(
         start,
         end,
@@ -458,6 +526,35 @@ const livePreviewPlugin = ViewPlugin.fromClass(
     decorations: (v) => v.decorations,
   }
 );
+
+async function syncCheckboxReadingMode(
+  app: App,
+  ctx: MarkdownPostProcessorContext,
+  el: HTMLElement,
+  widgetRaw: string,
+  complete: boolean
+): Promise<void> {
+  const file = app.vault.getAbstractFileByPath(ctx.sourcePath);
+  if (!(file instanceof TFile)) return;
+  const sectionInfo = ctx.getSectionInfo(el);
+  if (!sectionInfo) return;
+
+  await app.vault.process(file, (content) => {
+    const lines = content.split("\n");
+    const last = Math.min(sectionInfo.lineEnd, lines.length - 1);
+    for (let i = sectionInfo.lineStart; i <= last; i++) {
+      if (!lines[i].includes(widgetRaw)) continue;
+      const m = lines[i].match(CHECKBOX_PATTERN);
+      if (!m) return content;
+      const desired = complete ? "x" : " ";
+      if (m[2] === desired) return content;
+      lines[i] =
+        m[1] + desired + m[3] + lines[i].slice(m[0].length);
+      return lines.join("\n");
+    }
+    return content;
+  });
+}
 
 async function replaceInFile(
   app: App,
@@ -536,6 +633,17 @@ export default class ObsidianKitPlugin extends Plugin {
           fragment.appendChild(document.createTextNode(matchedRaw));
           lastIndex = match.index + matchedRaw.length;
           continue;
+        }
+
+        const complete = isWidgetComplete(spec);
+        if (complete !== null) {
+          void syncCheckboxReadingMode(
+            this.app,
+            ctx,
+            el,
+            matchedRaw,
+            complete
+          );
         }
 
         const widgetEl = buildWidget(spec, (newRaw) => {
